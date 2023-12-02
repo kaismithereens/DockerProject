@@ -1,0 +1,30 @@
+#create and edit the Dockerfile:
+touch Dockerfile
+vim Dockerfile
+
+#build the docker image:
+sudo docker image build .
+
+#edit the Dockerfile:
+vim Dockerfile
+
+#build the docker image:
+sudo docker image build .
+
+#list all docker images:
+sudo docker image ls
+
+#run the image:
+sudo docker run --rm 4f7a77b3e9de
+
+#inspect the image
+sudo docker image inspect 4f7a77b3e9de
+
+#run the image with listing the contents of /app directory
+sudo docker run --rm 4f7a77b3e9de ls /app
+
+#inspect the image:
+sudo docker image inspect 4f7a77b3e9de
+
+#open from 04_06_before:
+vim ubuntu.Dockerfile
