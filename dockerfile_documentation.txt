@@ -28,3 +28,307 @@ sudo docker image inspect 4f7a77b3e9de
 
 #open from 04_06_before:
 vim ubuntu.Dockerfile
+
+COPY - more secure version of ADD
+
+Wildcards:
+? -> matches only 1 character
+* -> matches all characters after a word until next non-asteriks character
+Arguments:
+--chown $user: $group -> assigns $user as owner if the file in the container image
+--link -> copies files into a blank layer
+
+#build docker image:
+sudo docker image build .
+
+#run the image:
+sudo docker run --rm 4f7a77b3e9de
+
+#list all docker  images
+sudo docker image ls
+
+#inspect the image:
+sudo docker image inspect 4f7a77b3e9de
+
+#pass the ls command to the container:
+03_before$ sudo docker run --rm 4f7a77b3e9de ls /app
+Dockerfile
+app.sh
+include
+
+2 ways to use RUN:
+
+1. RUN command-in-shell-form -> example: RUN echo "Hello,world!". These commands will be forked from a shell which can implicate how we need to terminate the hung programs with CTRL+C or the way how the text is displayed into a terminal.
+2. RUN ["command", "in","exec","form"] -> example: RUN ["echo","Hello,world!"]. These commands run directly in the container without a shell.update 
+
+#update Dockerfile in 04_07_before
+
+#build docker image:
+sudo docker image build .
+
+#run the curl command:
+sudo docker run --rm e6a4fb87d5d13 curl example.com
+
+Starting your app with ENTRYPOINT:
+
+1. ENTRYPOINT command: signals sent to the app are caught by the shell-not the app. 
+2. ENTRYPOINT ["command","in","exec","form"]
+
+
+#edit Dockerfile in 04_08_before
+
+#build docker image:
+sudo docker image build .
+
+#run the docker image:
+(base) tea@tea-XPS-13-7390:~/code/Docker/Ex_Files_Docker_EssT/Exercise Files/04_08_before$ sudo docker run --rm db7bebf971c6aa431ba
+============================================================
+
+     🎉🎉🎉🎉🎉 WELCOME TO THE DATE APP!!! 🎉🎉🎉🎉🎉
+
+============================================================
+INFO: Fetching date from the Internet. Hang on!
+
+
+🕰️  The date is: Wed Dec  6 08:37:17 UTC 2023
+
+⚙️  Here's what's running in your container:
+
+UID        PID  PPID  C STIME TTY          TIME CMD
+root         1     0  0 08:37 ?        00:00:00 /bin/sh -c /app/app.sh
+root         7     1  0 08:37 ?        00:00:00 bash /app/app.sh
+root        16     7  0 08:37 ?        00:00:00 ps -ef
+
+
+⚙️  0 arguments were provided to this application.
+
+#provide an argument at the end:
+
+(base) tea@tea-XPS-13-7390:~/code/Docker/Ex_Files_Docker_EssT/Exercise Files/04_08_before$ sudo docker run --rm db7bebf971c6aa431ba --argument
+============================================================
+
+     🎉🎉🎉🎉🎉 WELCOME TO THE DATE APP!!! 🎉🎉🎉🎉🎉
+
+============================================================
+INFO: Fetching date from the Internet. Hang on!
+
+
+🕰️  The date is: Wed Dec  6 08:41:51 UTC 2023
+
+⚙️  Here's what's running in your container:
+
+UID        PID  PPID  C STIME TTY          TIME CMD
+root         1     0  0 08:41 ?        00:00:00 /bin/sh -c /app/app.sh --argument
+root         6     1  0 08:41 ?        00:00:00 bash /app/app.sh
+root        15     6  0 08:41 ?        00:00:00 ps -ef
+
+
+⚙️  0 arguments were provided to this application.
+
+#edit the DOckerfile
+
+#build the Docker image with the name:
+sudo docker image build . -t my-image
+
+#run the named image
+(base) tea@tea-XPS-13-7390:~/code/Docker/Ex_Files_Docker_EssT/Exercise Files/04_08_before$ sudo docker run --rm my-image --argument
+============================================================
+
+     🎉🎉🎉🎉🎉 WELCOME TO THE DATE APP!!! 🎉🎉🎉🎉🎉
+
+============================================================
+INFO: Fetching date from the Internet. Hang on!
+
+
+🕰️  The date is: Wed Dec  6 08:47:32 UTC 2023
+
+⚙️  Here's what's running in your container:
+
+UID        PID  PPID  C STIME TTY          TIME CMD
+root         1     0  0 08:47 ?        00:00:00 bash /app/app.sh --argument
+root        15     1  0 08:47 ?        00:00:00 ps -ef
+
+
+We also got some arguments: --argument
+
+CMD's behaviour depends on:
+-> wheter an ENTRYPOINT is provided or not
+-> whether CMD is written in shell or in exec form
+
+1. ENTRYPOINT missing, CMD provided: launches the container with the app as top lvl process
+2. ENTRYPOINT provided, CMD provided: everything provided to CMD will be provided to ENTRYPOINT as arguments
+3. ENTRYPOINT provided, CMD missing: ENTRYPOINT will behave as it has no arguments
+4. ENTRYPOINT missing, CMD missing:it can inheret these from the base image if they are defined there
+
+#edit Dockerfile in 04_09_before
+
+#build the image:
+sudo docker image build . -t my-image
+
+#run the image without arguments:
+(base) tea@tea-XPS-13-7390:~/code/Docker/Ex_Files_Docker_EssT/Exercise Files/04_09_before$ sudo docker run --rm my-image                                        
+============================================================
+
+     🎉🎉🎉🎉🎉 WELCOME TO THE DATE APP!!! 🎉🎉🎉🎉🎉
+
+============================================================
+INFO: Fetching date from the Internet. Hang on!
+
+
+🕰️  The date is: Wed Dec  6 09:03:26 UTC 2023
+
+⚙️  Here's what's running in your container:
+
+UID        PID  PPID  C STIME TTY          TIME CMD
+root         1     0  0 09:03 ?        00:00:00 bash /app/app.sh
+root        14     1  0 09:03 ?        00:00:00 ps -ef
+
+
+⚙️  0 arguments were provided to this application.
+
+#run the image with the argument provided:
+(base) tea@tea-XPS-13-7390:~/code/Docker/Ex_Files_Docker_EssT/Exercise Files/04_09_before$ sudo docker run --rm my-image --argument
+docker: Error response from daemon: failed to create task for container: failed to create shim task: OCI runtime create failed: runc create failed: unable to start container process: exec: "--argument": executable file not found in $PATH: unknown.
+
+#edit the Dockerfile
+
+#build the new image
+sudo docker image build . -t my-image
+
+#run the image:
+(base) tea@tea-XPS-13-7390:~/code/Docker/Ex_Files_Docker_EssT/Exercise Files/04_09_before$ sudo docker run --rm my-image --whatever
+============================================================
+
+     🎉🎉🎉🎉🎉 WELCOME TO THE DATE APP!!! 🎉🎉🎉🎉🎉
+
+============================================================
+INFO: Fetching date from the Internet. Hang on!
+
+
+🕰️  The date is: Wed Dec  6 09:08:19 UTC 2023
+
+⚙️  Here's what's running in your container:
+
+UID        PID  PPID  C STIME TTY          TIME CMD
+root         1     0  0 09:08 ?        00:00:00 bash /app/app.sh --whatever
+root        15     1  0 09:08 ?        00:00:00 ps -ef
+
+
+We also got some arguments: --whatever
+
+
+
+⚙️  1 arguments were provided to this application.
+
+#edit the Dockerfile
+
+#build the image
+
+#run the image:
+(base) tea@tea-XPS-13-7390:~/code/Docker/Ex_Files_Docker_EssT/Exercise Files/04_09_before$ sudo docker run --rm my-image
+============================================================
+
+     🎉🎉🎉🎉🎉 WELCOME TO THE DATE APP!!! 🎉🎉🎉🎉🎉
+
+============================================================
+INFO: Fetching date from the Internet. Hang on!
+
+
+🕰️  The date is: Wed Dec  6 09:10:54 UTC 2023
+
+⚙️  Here's what's running in your container:
+
+UID        PID  PPID  C STIME TTY          TIME CMD
+root         1     0  0 09:10 ?        00:00:00 bash /app/app.sh --argument
+root        15     1  0 09:10 ?        00:00:00 ps -ef
+
+
+We also got some arguments: --argument
+
+
+
+⚙️  1 arguments were provided to this application.
+
+(base) tea@tea-XPS-13-7390:~/code/Docker/Ex_Files_Docker_EssT/Exercise Files/04_09_before$ sudo docker run --rm my-image --whatever
+============================================================
+
+     🎉🎉🎉🎉🎉 WELCOME TO THE DATE APP!!! 🎉🎉🎉🎉🎉
+
+============================================================
+INFO: Fetching date from the Internet. Hang on!
+
+
+🕰️  The date is: Wed Dec  6 09:11:52 UTC 2023
+
+⚙️  Here's what's running in your container:
+
+UID        PID  PPID  C STIME TTY          TIME CMD
+root         1     0  0 09:11 ?        00:00:00 bash /app/app.sh --argument --whatever
+root        16     1  0 09:11 ?        00:00:00 ps -ef
+
+
+We also got some arguments: --argument
+
+
+
+We also got some arguments: --whatever
+
+
+
+⚙️  2 arguments were provided to this application.
+
+
+Adding variables with ENV and ARG:
+
+Build areguments can be set using ARG which allows us to set a variable at build time. We are using $curl_bin variable that is passed by the user at run time by using the --build-arg flag. 
+
+ARG curl_bin = curl
+RUN apt -y update && apt -y install "$curl_bin"
+
+Setting environment varibles with ENV: ENV configures environment variables for containers started from this image. We were using $curl_bin as an ENV variable in this example. 
+
+ENV curl_bin = "curl=7.85.0"
+RUN apt -y update && apt -y install "$curl_bin"
+
+Both can be set to deafult values to provide an option for user to change it at runtime.
+
+Differences: 
+1. ENV  variables are defined for every container started from an image and live with every container - ARG variables are only available during runtime.
+2. ARG are set at build time, while ENV are set at run time. You can not override ENV variables thru docker build.
+
+Similarities:
+1. You can only use ENV and ARG variables withing the RUN commands
+2. Both ENV and ARG variables must be set before the RUN command in order to use them in the RUN command that references them
+
+#edited Dockerfile in 04_09
+  4 ARG curl_bin="curl"
+  5 RUN apt -y update && apt -y install "$curl_bin"
+
+#build the image my-image
+sudo docker image build . -t my-image
+
+#run the image
+sudo docker run --rm my-image --argument
+
+#rebuild the image with providing the faulty curl argument
+sudo docker image build . -t my-image --build-arg curl_bin=invalid .
+
+#echo from the container gets empty string
+(base) tea@tea-XPS-13-7390:~/code/Docker/Ex_Files_Docker_EssT/Exercise Files/04_09_before$ sudo docker run --rm --entrypoint sh my-image -c 'echo $curl_bin'
+
+
+#edit the Dockerfile
+ENV curl_bin="curl"
+RUN apt -y update && apt -y install "$curl_bin"
+
+#build the image
+sudo docker image build . -t my-image
+
+#run the image
+sudo docker run --rm  my-image --argument
+
+#run the image with echo prints "curl"
+(base) tea@tea-XPS-13-7390:~/code/Docker/Ex_Files_Docker_EssT/Exercise Files/04_09_before$ sudo docker run --rm --entrypoint sh my-image -c 'echo $curl_bin'
+curl
+
+OTHER helpful Docker commands
