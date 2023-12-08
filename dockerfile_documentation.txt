@@ -56,6 +56,7 @@ Dockerfile
 app.sh
 include
 
+4.7.
 2 ways to use RUN:
 
 1. RUN command-in-shell-form -> example: RUN echo "Hello,world!". These commands will be forked from a shell which can implicate how we need to terminate the hung programs with CTRL+C or the way how the text is displayed into a terminal.
@@ -69,6 +70,7 @@ sudo docker image build .
 #run the curl command:
 sudo docker run --rm e6a4fb87d5d13 curl example.com
 
+4.8. 
 Starting your app with ENTRYPOINT:
 
 1. ENTRYPOINT command: signals sent to the app are caught by the shell-not the app. 
@@ -151,6 +153,7 @@ root        15     1  0 08:47 ?        00:00:00 ps -ef
 
 We also got some arguments: --argument
 
+4.9. 
 CMD's behaviour depends on:
 -> wheter an ENTRYPOINT is provided or not
 -> whether CMD is written in shell or in exec form
@@ -278,7 +281,7 @@ We also got some arguments: --whatever
 ⚙️  2 arguments were provided to this application.
 
 
-Adding variables with ENV and ARG:
+4.10. Adding variables with ENV and ARG:
 
 Build areguments can be set using ARG which allows us to set a variable at build time. We are using $curl_bin variable that is passed by the user at run time by using the --build-arg flag. 
 
@@ -331,4 +334,111 @@ sudo docker run --rm  my-image --argument
 (base) tea@tea-XPS-13-7390:~/code/Docker/Ex_Files_Docker_EssT/Exercise Files/04_09_before$ sudo docker run --rm --entrypoint sh my-image -c 'echo $curl_bin'
 curl
 
-OTHER helpful Docker commands
+4.11. OTHER helpful Docker commands
+
+https://docs.docker.com/engine/reference/builder/
+
+LABEL -> accepts key-value: used for documentation
+
+WORKDIR-> sets working directory for RUN commands and containers, can be used multiple times to change the working directory while building
+
+USER-> sets user for RUN commands or container
+->can be overriden by providing docker run --user flag
+
+#example in Dockerfile:
+RUN useradd -p supersecret newuser
+USER newuser
+...
+
+EXPOSE ->documents ports that containers created from the image should expose
+
+4.12. Multi stage builds
+size_diff.sh script to compare the size of the image to the size of the app.
+
+
+We can create two Dockerfiles and use the builder pattern to make our image slimmer and faster::/app/include/
+#example:
+docker create --name get-date-text my-image && 
+docker cp get-date-text:/app/iclude/date.txt . &&
+docker build -t my-smaller-image -f smaller.Dockerfile .
+
+Disadvantages:
+-> complexity
+-> hard to maintain
+-> more artifacts
+
+This is solved by using multi-stage builds that allow you to use multiple base images
+Each froup of commands under a base image is called a stage
+The last stage is the stage used to create your final image.
+Stages are count from 0.
+They use COPY --from flag
+You can ase aliases to name each of the stages.
+
+Other features:
+You can reference external images in COPY --from commands and reuse stages.
+
+Benefits:
+-> Small final images
+-> much faster and less fragile
+-> security 
+
+#example:
+tiny.Dockerfile
+
+4.13. Multi platform images
+#uname -a
+(base) tea@tea-XPS-13-7390:~/code/Docker/Ex_Files_Docker_EssT/Exercise Files/04_12_after$ uname -a
+Linux tea-XPS-13-7390 5.4.0-150-generic #167~18.04.1-Ubuntu SMP Wed May 24 00:51:42 UTC 2023 x86_64 x86_64 x86_64 GNU/Linux
+
+#sudo docker run --rm alpine uname -a 
+Unable to find image 'alpine:latest' locally
+latest: Pulling from library/alpine
+661ff4d9561e: Pull complete 
+Digest: sha256:51b67269f354137895d43f3b3d810bfacd3945438e94dc5ac55fdac340352f48
+Status: Downloaded newer image for alpine:latest
+Linux e69e24a0aca4 5.4.0-150-generic #167~18.04.1-Ubuntu SMP Wed May 24 00:51:42 UTC 2023 x86_64 Linux
+
+#docker run --rm --platform linux/arm64 alpine uname -a
+(base) tea@tea-XPS-13-7390:~/code/Docker/Ex_Files_Docker_EssT/Exercise Files/04_12_after$ sudo docker run --rm --platform linux/arm64 alpine uname -a
+Unable to find image 'alpine:latest' locally
+latest: Pulling from library/alpine
+c30352492317: Pull complete 
+Digest: sha256:51b67269f354137895d43f3b3d810bfacd3945438e94dc5ac55fdac340352f48
+Status: Downloaded newer image for alpine:latest
+exec /bin/uname: exec format error
+
+qemu-user-static -> emulator qus, allows DOcker to emulate diiferent proccessor types while processing run commands during image builds
+
+#docker run --privileged --rm aptman/qus --static -- --path arm
+
+#sudo apt -y update
+
+#sudo apt -y install qemu qemu-system-misc qemu-user binfmt-support 
+
+#docker build -t my-image:latest-x86 --pull
+
+#docker build -t my-image:latest-arm --platform linux/arm--pull .
+
+#docker run --rm my-image:latest-arm
+
+4.14. Multi app images
+
+Alternatives:
+-> multiple containers on a single network
+-> using docker compose
+-> using orchestrator like DOcker Swarm or Kubernetes
+
+Ways to do it:
+-> using ENTRYPOINT scripts
+#example
+./my_first_process &
+./my_second_process &
+
+#then use --init flag
+docker run --init
+
+#other options:
+install and configure systemd in the image
+install s6-overlay
+
+
