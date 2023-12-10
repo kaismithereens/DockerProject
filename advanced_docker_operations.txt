@@ -1,0 +1,31 @@
+5.1. Extending container privileges with capabilities
+
+Linux capabilities: there are currently 26 different Linix capabilities that can be added or removed to your DOcker container. Your DOcker container comes with some of them added already, but it is eay to change them by using cap_add and cap_drop flags when running your container.
+
+Cap-add takes precedence over cap-drop, and you can use both in the same run docker command.
+
+Here are some examples:
+
+docker run --entrypoint sh --rm alpine -c 'touch /tmp/file && CHOWN 1001:1001 /tmp/file && echo "File permission changed."'
+
+
+docker run --entrypoint sh --cap-drop CAP_CHOWN  --rm alpine -c 'touch /tmp/file && CHOWN 1001:1001 /tmp/file && echo "File permission changed."'
+
+
+docker run --entrypoint sh --cap-drop CAP_CHOWN --cap-add CHOWN --rm alpine -c 'touch /tmp/file && CHOWN 1001:1001 /tmp/file && echo "File permission changed."'
+
+You can use cap-drop all and then add the capabilities you need.
+
+docker run --entrypoint sh --cap-add CHOWN --cap-drop ALL --rm alpine -c 'touch /tmp/file && CHOWN 1001:1001 /tmp/file && echo "File permission changed."'
+
+
+You can give your container access to specific devices by using --device flag. This is useful if you want your container to use USB devices or GPU cards
+
+docker run --device
+
+The flag --privileged gives access to your container to use everything and to access everyting including devices on your system like your hard drive.
+
+
+5.2. Setting container limits: Part 1
+
+
