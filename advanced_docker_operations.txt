@@ -28,4 +28,54 @@ The flag --privileged gives access to your container to use everything and to ac
 
 5.2. Setting container limits: Part 1
 
+Memory starvation - one of the possible issues with containers if not used controls properly to set resource limits.
+
+Name spaces specify the resources that containers can see or access on a system.
+Contol groups specify how much of those resources containers can consume. Control groups help you specify rules like: this app can use only 2 CPUs, this app can use no more than 8 MegaByets of Memory.
+
+Docker container can use flags like:
+--cpus 0.00 -> max processor time
+--memory 1G -> max memory
+--cpu-period -> time to wait until receiving processor time
+--cpu-quota -> max amount of time to use when processor time received
+
+examples:
+
+--cpu-period 1000000 --cpu-quota 400000
+40% max CPU, 1 CPU
+
+--cpu-period 500000 --cpu-quota 400000
+40% max CPU, 2 CPU
+--cpus 1.4 -> the same as above but put tpgether
+
+5.2. Setting container limits: Part 2
+
+#command for properties
+top -d 0.1
+
+#build the image
+docker build -t stress .
+
+#run the stress image
+docker run --rm stress --cpu 4 --timeout 5
+
+#run the stress image with --cpus flag
+docker run --rm --cpus 1.6 stress --cpu 4 --timeout 5
+
+#increase timeout to 15
+docker run --rm stress --cpu 4 --timeout 15
+
+#build the image with --cpu-period flag
+docker run --rm --cpu-period 100000 --cpu-quota 160000 stress --cpu 4 --timeout 15
+
+#build the image with --cpu-period flag changed
+docker run --rm --cpu-period 60000 --cpu-quota 100000 stress --cpu 4 --timeout 15
+
+#run the stress image with 1 VM
+docker run --rm stress --vm 1 --vm-bytes 3.99G --timeout 15
+
+#run the stress image with memory limit 2GB
+docker run --memory 2G --rm stress --vm 1 --vm-bytes 3.99G --timeout 15
+
+
 
