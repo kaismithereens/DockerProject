@@ -48,7 +48,7 @@ examples:
 40% max CPU, 2 CPU
 --cpus 1.4 -> the same as above but put tpgether
 
-5.2. Setting container limits: Part 2
+5.3. Setting container limits: Part 2
 
 #command for properties
 top -d 0.1
@@ -76,6 +76,92 @@ docker run --rm stress --vm 1 --vm-bytes 3.99G --timeout 15
 
 #run the stress image with memory limit 2GB
 docker run --memory 2G --rm stress --vm 1 --vm-bytes 3.99G --timeout 15
+
+#run the stress image with memory limit 2GB
+docker run --memory 2G --oom-kill-disable --rm stress --vm 1 --vm-bytes 3.99G --timeout 15
+
+5.4. Configuring logging with logging drivers: Part 1
+
+Applications send and receive data through standard streams:
+-> stdout
+-> stderr
+-> stdin
+
+When an apllication is running inside a container Docker uses logging drivers to capture data sent to these streams and forward them to other locations, like disks and logging systems.
+
+There are 2 ways to configure logging drivers:
+--log-driver flag: specifies the logging driver to use
+--log-opts flag: options for the logging driver. It accepts a JSON object.
+
+By deafult, retreiving information from logs in a container is a blocking operation, which means that your container and any apps whitin it will pause while the logging driver retrieves your logs.
+You can use the following flag to prevent this:
+--log-opts mode=nonblocking
+
+Possible downside: data loss if data in the containers exceeds the log space available.
+
+json-file logging driver is used by deafult, but you can use many differnent options for logging drivers.
+
+5.5. Configuring logging with logging drivers: Part 2''
+#run a container with logging 
+sudo docker run --name test-container-2 --log-driver none  my-image
+
+sudo docker run --name test-container-2 --log-driver none  my-image
+
+sudo ls /var/lib/docker/containers
+
+sudo docker inspect test-container --format '{{.ID}}'
+
+sudo ls /var/lib/docker/containers/9790da0333f0af85696ffde14ba9ab5b68f8eff654cb0b9760021f289cf0e464
+9790da0333f0af85696ffde14ba9ab5b68f8eff654cb0b9760021f289cf0e464-json.log  config.v2.json   hostname  mounts	   resolv.conf.hash
+checkpoints								   hostconfig.json  hosts     resolv.conf
+
+(base) tea@tea-XPS-13-7390:~/code/Docker/Ex_Files_Docker_EssT/Exercise Files/04_12_after$ sudo cd /var/lib/docker/containers/9790da0333f0af85696ffde14ba9ab5b68f8eff654cb0b9760021f289cf0e464
+
+sudo -i
+
+cd /var/lib/docker/containers/9790da0333f0af85696ffde14ba9ab5b68f8eff654cb0b9760021f289cf0e464
+
+less 9790da0333f0af85696ffde14ba9ab5b68f8eff654cb0b9760021f289cf0e464-json.log
+
+
+#run a container without logging 
+sudo docker run --name test-container-2 --log-driver none  my-image
+
+sudo docker inspect test-container-2 --format '{{.ID}}'
+
+cd var/lib/docker/containers/270a6fe6c7b8b278e4233bf5a60ad5458e8e86f59a800eff7c2cb100925da1ec
+bash: cd: var/lib/docker/containers/270a6fe6c7b8b278e4233bf5a60ad5458e8e86f59a800eff7c2cb100925da1ec: No such file or directory
+
+sudo -i
+root@tea-XPS-13-7390:~# cd /var/lib/docker/containers/270a6fe6c7b8b278e4233bf5a60ad5458e8e86f59a800eff7c2cb100925da1ec
+root@tea-XPS-13-7390:/var/lib/docker/containers/270a6fe6c7b8b278e4233bf5a60ad5458e8e86f59a800eff7c2cb100925da1ec# ls
+checkpoints  config.v2.json  hostconfig.json  hostname  hosts  mounts  resolv.conf  resolv.conf.hash
+root@tea-XPS-13-7390:/var/lib/docker/containers/270a6fe6c7b8b278e4233bf5a60ad5458e8e86f59a800eff7c2cb100925da1ec# docker logs test-container-2
+Error response from daemon: configured logging driver does not support reading
+root@tea-XPS-13-7390:/var/lib/docker/containers/270a6fe6c7b8b278e4233bf5a60ad5458e8e86f59a800eff7c2cb100925da1ec# exit
+
+5.6. Configuring the Docker daemon
+
+ps -ef | grep docker
+
+dockerd --help
+
+OPTIONS:
+--config-file string-> looks for config files in "/etc/docker/daemon.jsn"
+--data-root -> where to store its files: "/var/lib/docker"
+--debug -> enables debug mode
+--log-level {"debug"|"info"|warn"|"error"|"fatal"}
+--deafult-runtime -> usually runc, can be changed here
+--add-runtime -> use different OCI runtime
+--exec-opt -> options to runtime
+
+
+*RECAP*
+Where is everything?
+- /var/run/docker.sock -> pipe between DOcker client and DOcker engine
+- /etc/docker/daemon.json -> Docker engine configuration
+
+
 
 
 
