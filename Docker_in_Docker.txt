@@ -1,0 +1,66 @@
+6.1. The case for Docker in Docker
+
+Use case: 
+-> When you are running containeraized test suits, so they behave the same on any test suits
+-> When you are creating/running applications that need to run other containers from within containeraized apps: platform engineering
+-> Emulationg entire platforms
+
+6.2. Creating the container to run containers
+2 ways to do this
+-> "True" Docker in Docker -> 
+Possible issues:
+needs cgroup mounting, 
+overlay filesystem incompabilities,
+-> via UNIX socket -> expose Docker Engine within container through UNIX socket bind mount. All containers are accessible putside of parent container and no cgroup or overlay clashes
+
+Sysbox container runtime project -> available on github
+This keeps everything isolated within its own Docker image while still being managed by the Docker engine on your VM.
+
+#bind mapping
+sudo docker run --rm -v /var/run/docker.sock:/var/run/docker.sock --entrypoint bash -i -t my-image
+
+curl --unix-socket /var/run/docker.sock http://anything/containers/json
+
+the above command is the same as the docker inspect
+
+6.3. Installing Docker in the container of containers
+
+#install Docker within a container:
+curl -L get.docker.io | bash
+
+#verify that it worked
+root@10d2d00c0621:/# docker ps
+CONTAINER ID   IMAGE      COMMAND   CREATED         STATUS         PORTS     NAMES
+10d2d00c0621   my-image   "bash"    4 minutes ago   Up 4 minutes             blissful_heisenberg
+
+#create a new container
+docker run --rm my-image
+
+6.4. Limitations of Docker through Docker
+
+
+ls /app/include/header.txt
+
+docker run --rm -it -v /app/include/header.txt:/header.txt alpine
+
+cat /header.txt
+
+stat /header.txt
+
+stat /app/include/header.txt
+
+-> this created a directory on our machine, instead of a file inside our container
+
+docker volume create temp
+
+#instead of docker run
+docker container create -v temp:/tmp alpine
+
+
+docker cp /app 836f:/tmp/app
+root@10d2d00c0621:/# docker cp /app 836f:/tmp/app
+Successfully copied 6.66kB to 836f:/tmp/app
+
+docker run --rm -it -v temp:/tmp alpine
+
+cat /tmp/app/include/header.txt
