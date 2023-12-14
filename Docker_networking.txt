@@ -1,0 +1,191 @@
+Networking
+
+7.1.
+Containers deal with networking through Network plugins.
+
+7.2.
+Every DOcker container uses bridge network driver by default. It connects docker containers to a virtual bridge network installed on your machine. Using IP tables containers connected to this bridge network will automatically be used to communicate with other containers connected to the bridge and to the outside world.
+
+Bridge network is a virtual network device that connects multiple networks together. They are used to take traffic from a real network adapter and forward it to virtual network adapters (on VM or on containers).
+
+Every container will "unshare" one or more Linux namespaces. One of those namespaces is the net namespace. This namespace allows containers to get their very own network stack that's isolated from the network stack on your host including network adapters. 
+Connecting these networks into a common bridge allows aćontainers to talk to each other while remaining logically isolated.
+Docker uses IP tables rules to ensure that bridges are isolated from each other.
+
+Other properties:
+-> A bridge is the default network driver for containers. No configuration is needed to have the containers join the Bridge bridge network
+
+-> You can create your own bridge networks by using --net 
+
+-> Containers can be joined to multiple networks at a time
+
+-> Containers on the default bridge need to know each other's IP addresses to communicate with each other. It comes with embedded DNS network already set up
+
+-> You can use --link option to docker run command to override or edit each container's etc/host files
+
+#command
+docker network
+
+docker network ls
+
+-> we can see 3 different networks: bridge, host and none
+
+docker network inspect bridge
+
+#you can use calculator.net to calculate how many IP addresses fit within a dedicated network subnet
+
+#create 2 containers
+sudo docker container create -it --name container-a --entrypoint sh curlimages/curl
+
+#container-a
+sudo docker container start container-a
+
+sudo docker container attach container-a
+
+ifconfig
+
+ping 172.17.0.3
+
+docker network create network-a
+
+#container-b
+sudo docker container start container-b
+
+sudo docker container attach container-b
+
+ifconfig
+
+ping 172.17.0.2
+
+sudo docker network create network-b
+
+#check help for options
+docker network --help
+
+#inspect the networks
+sudo docker network inspect network-a
+sudo docker network inspect network-b
+
+#recreate both containers
+sudo docker container create -it --name container-a --entrypoint sh --net network-a curlimages/curl
+
+sudo docker container create -it --name container-b --entrypoint sh --net network-b curlimages/curl
+
+#start the containers
+sudo docker container start container-a
+sudo docker container start container-b
+
+#attach to it
+sudo docker container attach container-a
+sudo docker container attach container-b
+
+#check the IP addresses
+ifconfig
+
+#ping
+ping 172.17.0.3
+ping 172.18.0.3
+
+-> they do not see each other
+
+#stop the container a
+sudo docker container stop container-a
+
+#connect the network
+sudo docker network connect network-b container-a
+
+#restart the container and attach to it
+sudo docker container start container-a
+sudo docker container attach container-a
+
+ifconfig
+
+ping 172.18.0.3
+
+-> the containers can see each other because they are on the same network now
+
+7.3. Exposing container ports between containers
+
+#restart the container a and attach to it
+sudo docker container start container-a
+sudo docker container attach container-a
+
+ifconfig
+
+nc -l -p 80
+
+#restart the container b and attach to it
+sudo docker container start container-b
+sudo docker container attach container-b
+
+#try to install telnet
+apk add busybox-extras
+
+#stop the container 
+sudo docker container stop container-b
+
+#remove the container
+sudo docker container rm container-b
+
+#recreate container b with root user
+sudo docker container create --user root -it --name container-b --entrypoint sh --net network-b curlimages/curl
+
+#start container b
+sudo docker container start container-b
+sudo docker container attach container-b
+
+#try to install telnet
+apk add busybox-extras
+
+telnet --help
+
+#this session fails
+telnet 172.17.0.2 80
+
+#remove container a
+sudo docker container rm container-a
+
+#create container a with --publish option
+sudo docker container create -it --name container-a --entrypoint sh --net network-a --publish 8080:80 curlimages/curl
+
+PORT MAPPING OUTSIDE:INSIDE
+
+#start the container and attach to it
+sudo docker container start container-a
+sudo docker container attach container-a
+
+#check the IP addres
+ifconfig eth0
+
+#use netcat to start a simple server that listens on port 80
+nc -l -p 80
+
+#use telnet on attached container b
+telnet 172.20.0.2 80
+
+#stop the server and chech gateway's IP
+~ $ ip route
+default via 172.20.0.1 dev eth0 
+172.20.0.0/16 dev eth0 scope link  src 172.20.0.2 
+
+#restart the server again
+nc -l -p 80
+
+#use telnet on attached container b
+/home/curl_user # telnet 172.20.0.1 8080
+Connected to 172.20.0.1
+
+#restart the server again
+nc -l -p 80
+
+#use telnet from your local machine
+telnet localhost 8080
+
+#start Portainer 
+sudo docker run -d -p 8000:8000 -p 9443:9443 --name portainer --restart=always -v /var/run/docker.sock:/var/run/docker.sock -v portainer_data:/data portainer/portainer-ce:latest
+
+#in your browser visit
+https://localhost:9443
+
+7.4. Host mode networking
+
