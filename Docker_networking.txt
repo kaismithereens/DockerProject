@@ -189,3 +189,108 @@ https://localhost:9443
 
 7.4. Host mode networking
 
+Host mode networking allows containers to use the same network interface and the same network stack as their host. Containers that use this oprtion don'r get the virtual network adapter. 
+
+Benefits:
+-> faster than bridge networking
+-> simplicity: you don't need to worry about publishing ports as this mode allows containers to connect to multiple ports from the outside
+-> containers are accessible from the host IP address instead of a "virtual" IP
+
+#allows using the same name for multiple containers 
+sudo docker container rm container-a
+
+#create container a
+sudo docker run --rm --net=host --entrypoint nc curlimages/curl -l -p 8082
+
+#create the container using interactive mode
+sudo docker run --rm --net=host -i --entrypoint nc curlimages/curl -l -p 8082
+
+#in another terminal run telnet
+(base) tea@tea-XPS-13-7390:~/code/Docker$ telnet localhost 8082
+Trying 127.0.0.1...
+Connected to localhost.
+Escape character is '^]'.
+
+#create the container using bash
+sudo docker run --rm --net=host -i -t --entrypoint bash curlimages/curl
+
+(base) tea@tea-XPS-13-7390:~/code/Docker$ sudo docker run --rm --net=host -i -t --entrypoint bash curlimages/curl
+docker: Error response from daemon: failed to create task for container: failed to create shim task: OCI runtime create failed: runc create failed: unable to start container process: exec: "bash": executable file not found in $PATH: unknown.
+
+#create the container using sh
+sudo docker run --rm --net=host -i -t --entrypoint sh curlimages/curl
+
+#from another terminall run telnet commands and write a message that will be displayed on the first terminal:
+telnet localhost 8082
+telnet localhost 8083
+telnet localhost 8084
+
+(base) tea@tea-XPS-13-7390:~/code/Docker$ sudo docker run --rm --net=host -i -t --entrypoint sh curlimages/curl
+~ $ nc -l -p 8082 &
+~ $ nc -l -p 8083 &
+~ $ nc -l -p 8084 &
+~ $ Hi there 8082
+Hi there 8083
+Hi there 8084
+
+7.5. Disabling network connectivity with the Null Driver
+
+The null network driver is used to create containers with no external network capabilities. These containers will not be able to communicate eith other containers on any network or with the the outside worls.
+
+Containers connected with a null network driver will get a loop back interface so that they can connect to themselves through the special 127.0.0.1 IP address and localhost DNS label.
+
+
+#create a container 
+sudo docker run --rm --net=none --entrypoint sh -i -t curlimages/curl
+
+~ $ ifconfig
+lo        Link encap:Local Loopback  
+          inet addr:127.0.0.1  Mask:255.0.0.0
+          UP LOOPBACK RUNNING  MTU:65536  Metric:1
+          RX packets:0 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:0 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:1000 
+          RX bytes:0 (0.0 B)  TX bytes:0 (0.0 B)
+
+
+7.6. Advanced Network Drivers and Plugins
+
+macvlan and ipvlan -> give your containers real IP addresses on your network. Used by music servers or home automation software or secure, high performance apps that need to bypass a network bridge without having access to all of the host's network interfaces.
+-> they both work by binding containers to specific network cards on the host running Docker engine 
+
+Handling MAC addresses differences:
+-> macvlan gives each container their own MAC address which can lead to network degradation
+-> ipvlan gives containers a shared MAC address
+-> ipvlan has different modes in which it can operate: L2 and L3
+IN L2 mode it behaves almost exactly like macvlan, except everything going through the same MAC address
+IN L3 mode all routing is done by the Docker host instead of working through a network interface's default gateway
+
+Docker doesn't provide containers that use macvlan or ipvlan network by default.
+
+You will need to use:
+docker network create -d macvlan --subnet SUBNET -o INTERFACE --gateway GATEWAY
+
+We can use --aux-address option to give Docker a list of IP addresses to exclude from allowcation
+
+docker network create -d macvlan --subnet 192.168.1.1/24 -o eth0 --gateway 192.168.1.1 --aux-address "host=192.168.1.2" my-net
+
+You can specify the IP range with a --ip-range option
+
+docker network create -d macvlan --subnet 192.168.1.1/24 -o eth0 --gateway 192.168.1.1 --ip-range 192.168.1.64/26 my-net
+
+Another driver that Docker provides is an overlay driver. This driver creates a container network that spans multiple nodes - it allows you to create a virtual network across two or more nodes running the Docker engine or Swarm.
+
+https://docs.docker.com/network/overlay
+
+Evere overlay network consists of:
+1. A network tunnel (VXLAN Tunneling)
+2. Virtual network interfaces (flannel<vni>)
+3. Agents running on hosts (flanneld). 
+
+The agents are responsible fo rsending packets from containers through virtual network intefaces installed by overlay. Virtual network interfaces then wrap each packet into a bigger packet that gets sent through the tunnel through its destination. Usually the packets are encrypted in transit within the tunnel to prevent outsiders sniffing them. Once it arrives to its destination the original packet is retreived from the bigger packet and sent to the container through the overlay's virtual network interface.
+
+There are several technologies that overlay uses to establish a secure tunnel; Virtual Extensible LAN or vxlan and Wire Guard are two most popular choices.
+
+Docker also supports network plugins that provide additional networking capabilities. Network plugins can be found either on Docker Hub or through GitHub.
+
+Weaveworks Weave Net plugin is the most popular network plugin. It allows you to create virtual networks for containers that span multiple hosts. It also offers service discovery and network policies.
