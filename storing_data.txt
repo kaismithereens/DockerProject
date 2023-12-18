@@ -1,0 +1,124 @@
+Storing Data
+
+8.1. Introduction to Data storage
+
+What are volumes?
+Volumes allow you to save data from containers safely. Volumes present folders, shares or block devices to containers through volume drivers. 
+When a volume is mapped to a container, Docker transparently maps a folder into a mount point within a container. 
+Volume drivers define how volumes are created and managed by containers.
+By default, Docker uses the local volume driver. The local driver creates a directory within Docker system directory and mounts it into a container like a virtual disk of sorts.
+
+You can install volume drivers to create many different kinds of volumes.
+
+Docker maintains an 'official list' of volume drivers:
+https://docs.docker.com/storage/storagedriver/select-storage-driver/
+
+https://docs.docker.com/storage/volumes/
+
+The local driver supports NFS, CIFS, and block devices.
+
+8.3. Creatíng Docker Volumes
+
+Volumes are created by using docker volume create command.
+
+YOu can change driver with the -d option
+
+Volumes can be mounted onto containers with
+docker run --volume
+or
+docker run --mount
+
+--mount allows you to specify how Docker should mount your volume. It accepts 5 values:
+type 
+source
+destination
+readonly
+volume-opt
+
+-v option accepts 3 optons separated by colons:
+source:destination:[ro]
+
+#example container that stores data we can not lose
+sudo docker volume create super-duper-important
+
+sudo docker run -i -t --rm --mount 'type=volume,source=super-duper-important,destination=/super-important' alpine
+
+(base) tea@tea-XPS-13-7390:~/code/Docker$ sudo docker volume inspect super-duper-important
+[sudo] password for tea: 
+[
+    {
+        "CreatedAt": "2023-12-18T11:15:03+01:00",
+        "Driver": "local",
+        "Labels": null,
+        "Mountpoint": "/var/lib/docker/volumes/super-duper-important/_data",
+        "Name": "super-duper-important",
+        "Options": null,
+        "Scope": "local"
+    }
+]
+
+#in a new terminal window:
+(base) tea@tea-XPS-13-7390:~/code/Docker$ cd /var/lib/docker/volumes/super-duper-important/_data
+bash: cd: /var/lib/docker/volumes/super-duper-important/_data: Permission denied
+(base) tea@tea-XPS-13-7390:~/code/Docker$ sudo -i 
+root@tea-XPS-13-7390:~# /var/lib/docker/volumes/super-duper-important/_data
+-bash: /var/lib/docker/volumes/super-duper-important/_data: Is a directory
+root@tea-XPS-13-7390:~# cd /var/lib/docker/volumes/super-duper-important/_data
+root@tea-XPS-13-7390:/var/lib/docker/volumes/super-duper-important/_data# ls
+README
+root@tea-XPS-13-7390:/var/lib/docker/volumes/super-duper-important/_data# cat README 
+Hello world
+root@tea-XPS-13-7390:/var/lib/docker/volumes/super-duper-important/_data# cat README 
+Hello world
+root@tea-XPS-13-7390:/var/lib/docker/volumes/super-duper-important/_data# 
+
+#data is perminant even after we close the container
+(base) tea@tea-XPS-13-7390:~/code/Docker$ sudo docker run -i -t --rm --mount 'type=volume,source=super-duper-important,destination=/super-important' alpine
+/ # echo 'Hello world' > /super-important/README
+/ # ls
+bin              lib              proc             srv              usr
+dev              media            root             super-important  var
+etc              mnt              run              sys
+home             opt              sbin             tmp
+/ # ls /super-important/
+README
+/ # exit
+
+8.4. Bind mounts
+
+Your code has a set of test that resides in a directory 
+You want to run these tests in a container without rebuilding your image every time.
+
+With bind mounts all you need to do is to map your source code to a folder within a container and run your tests.
+
+Bind mounts map dorectories on your computer to directories in your containers.
+
+Use cases:
+-> Hot reloading an app within a container while changing code from outside of it
+-> Backing up and restoring Docker volumes 
+-> Faster one-off containers for cron jobs or other scheduled tasks
+
+docker run --mount "type=bind, source=DIR, destination=DIR, readonly, [advanced]"
+
+Bind mount accepts 2 advanced options:
+bind-propagation: configures how sub-mounts are presented
+selinux-label: configures whether mount can be shared with other containers
+
+docker run -v "source:destination:[ro]" 
+
+#create a dir
+mkdir -p /tmp/lima/stuff
+
+for x in $(seq 1 10): do echo "This is file number $x." > /tmp/lima/stuff/file-$x
+
+ls /tmp/lima/stuff
+
+cat /tmp/lima/stuff/file-3
+
+#create a container
+docker run --rm -v /tmp/lima/stuff:/stuff alpine cat /stuff/file-3
+
+docker run --rm -v /tmp/lima/stuff:/stuff alpine sh -c 'echo "This is file number 10" > /stuff/file-10'
+
+8.5. Copying data from volumes
+
