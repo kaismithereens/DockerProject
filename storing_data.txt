@@ -122,3 +122,46 @@ docker run --rm -v /tmp/lima/stuff:/stuff alpine sh -c 'echo "This is file numbe
 
 8.5. Copying data from volumes
 
+(base) tea@tea-XPS-13-7390:~/code/Docker$ sudo docker volume inspect super-duper-important
+[sudo] password for tea: 
+[
+    {
+        "CreatedAt": "2023-12-18T11:15:03+01:00",
+        "Driver": "local",
+        "Labels": null,
+        "Mountpoint": "/var/lib/docker/volumes/super-duper-important/_data",
+        "Name": "super-duper-important",
+        "Options": null,
+        "Scope": "local"
+    }
+]
+
+sudo docker run --rm -v $PWD:/target -v super-duper-important:/backup alpine tar cvzf /target/backup.tar -C /backup .
+
+tar -tf backup.tar
+
+sudo docker volume create super-duper-important-restore
+
+sudo docker run --rm -v $PWD:/target -v super-duper-important-restore:/restore alpine tar xvf /target/backup.tar -C /restore .
+
+sudo docker run --rm -v super-duper-important-restore:/restore alpine cat /restore/README
+
+#from the terminal
+(base) tea@tea-XPS-13-7390:~/code/Docker$ sudo docker run --rm -v $PWD:/target -v super-duper-important-restore:/restore alpine tar xvf /target/backup.tar -C /restore .
+./
+./README
+(base) tea@tea-XPS-13-7390:~/code/Docker$ sudo docker run --rm -v super-duper-important-restore:/restore alpine cat /restore/README
+Hello world
+
+8.6. Bind mount caveats with Docker Desktop
+
+time docker run --rm -v super-duper-important:/app alpine dd if=/dev/urandom of=/app/stuff.txt bs=1G count=1 
+
+time docker run --rm -v /tmp/lima/stuff:/app alpine dd if=/dev/urandom of=/app/stuff.txt bs=1G count=1 
+
+Docker is running within a virtual machine if you are not using Linux ,working directories are shared with the virtual machine and made to appear as if they are native to the machine. Every read and write to your bind mount needs to pass through some kind of a driver.
+
+Use volumes for data intesive loads.
+
+
+
