@@ -1,0 +1,68 @@
+Docker registry
+
+9.1. Introduction
+
+Sharing containerized apps issues:
+-> distribution
+-> autheniticity isn't guaranteed
+-> tedious to operate - using docker load and docjer run every time
+
+The image registry is a web server that serves container images. Registries use a particular folder structure to make it easy to find images and verify that they are who they claim to be. 
+It works seamlessly with Docker pull.
+As long as you are logged into the registry you can run 
+Docker pull my-app
+and Docker will serve that image to you. No more need to use Docker load and Docker save
+
+Docker Hub - the most popular Docker registry
+
+9.2. Creating a simple registry
+
+There are 2 ways to create a registry:
+-> run the registry as a container from the official image
+-> front the registry with a reverse proxy
+
+#create container
+sudo docker run --rm --name registry -p 5000:5000 -d registry:2
+
+sudo docker ps
+
+(base) tea@tea-XPS-13-7390:~/code/Docker$ sudo docker ps
+CONTAINER ID   IMAGE                           COMMAND                  CREATED          STATUS          PORTS                                                                                            NAMES
+f56ff49de5bc   registry:2                      "/entrypoint.sh /etc…"   10 seconds ago   Up 10 seconds   0.0.0.0:5000->5000/tcp, :::5000->5000/tcp                                                        registry
+
+#tag the image
+sudo docker tag my-image:latest localhost:5000/my-image:latest
+
+#confirm that the image is there
+sudo docker images
+
+#push the image
+sudo docker push localhost:5000/my-image:latest
+
+#output on the terminal
+The push refers to repository [localhost:5000/my-image]
+49302e645794: Pushed 
+041f30f57546: Pushed 
+8ceb9643fb36: Pushed 
+latest: digest: sha256:901b0a5b4bf1ef6188d1e2106210de7553f38793d362ccf148ce36d51a491be2 size: 949
+
+#delete the local copy of the image we pushed
+sudo docker rmi localhost:5000/my-image
+
+#remove our local copy of the image
+sudo docker rmi my-image -f
+
+sudo docker images
+
+#now that the image has been deleted locally, we will use the registry image we pushed before
+sudo docker run --rm localhost:5000/my-image
+
+9.3. Pushing multi-platform manifest lists
+
+
+
+
+
+
+
+
