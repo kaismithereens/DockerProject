@@ -60,9 +60,109 @@ sudo docker run --rm localhost:5000/my-image
 9.3. Pushing multi-platform manifest lists
 
 
+Multi platform images are manifest lists that contain different image digests for different processor platforms. 
 
+#check what images you have locally
+sudo docker images my-image
 
+#recreate images with tag
+docker tag my-image:latest-arm localhost:5000/my-image:latest-arm
 
+docker tag my-image:latest-arm localhost:5000/my-image:latest
+
+#push the images
+docker push localhost:5000/my-image:latest-arm
+
+docker push localhost:5000/my-image:latest
+
+#create manifest list
+docker manifest create --insecure localhost:5000/my-image --amend localhost:5000/my-image:latest --amend localhost:5000/my-image:latest-arm 
+
+#inspect the image
+docker manifest inspect localhost:5000/my-image
+
+#check if these images are pushed to the registry by comparing the first 5 numbers of DIGEST column. If they were not pushed to the regiistry these columns would show <NONE> instead.
+
+docker images --digests localhost:5000/my-image 
+
+docker manifest push localhost:5000/my-image
+
+#delete all my-images
+docker images | grep my-image | awk '{print $3}' | xargs docker rmi -f
+
+#lets run some tests now by creating new images
+docker run --rm localhost:5000/my-image 
+
+docker run --rm --platform linux/arm localhost:5000/my-image
+
+9.4. Creating and logging into authenticated registries
+
+Simple registry limitations:
+-> insecure
+-> only speak http
+-> not very configurable
+
+Reverse proxy is a web server that internally intercets and forwards traffic it receives to a destination that is usually an internal device. 
+
+It is the opposite of a regular proxy that externally intercepts and forwards the packets it receives before sending them through to some other network.
+
+#1. Create a Docker network for the registry
+#2. Create a self-signed certificate and private key
+#3. Create an authentication file so that we can use credentials 
+#4. Recreate our registry
+#5. Create NGINX web server as a reverse proxy in front of the registry and try to log into it with Docker login
+
+#create a bridge network named registry
+sudo docker create registry 
+Unable to find image 'registry:latest' locally
+latest: Pulling from library/registry
+Digest: sha256:0a182cb82c93939407967d6d71d6caf11dcef0e5689c6afe2d60518e3b34ab86
+Status: Downloaded newer image for registry:latest
+60d88df2438575c24b72b2c5279a40020f766d8954028f0251e186abe422f955
+
+#create the certificates
+sudo ./create_unsigned_certs.sh 
+fetch https://dl-cdn.alpinelinux.org/alpine/v3.19/main/x86_64/APKINDEX.tar.gz
+fetch https://dl-cdn.alpinelinux.org/alpine/v3.19/community/x86_64/APKINDEX.tar.gz
+(1/1) Installing openssl (3.1.4-r2)
+Executing busybox-1.36.1-r15.trigger
+OK: 8 MiB in 16 packages
+
+#there are 2 files
+ls certs/
+cert.pem  key.pem
+
+#add key.pm to our list of root certificate authorities.
+sudo cp ./certs/cert.pem /usr/local/share/ca-certificates/registry.crt
+
+#run update-ca-certificates
+(base) tea@tea-XPS-13-7390:~/code/Docker/Ex_Files_Docker_EssT/Exercise Files/09_04_before$ sudo update-ca-certificates 
+Updating certificates in /etc/ssl/certs...
+rehash: warning: skipping ca-certificates.crt,it does not contain exactly one certificate or CRL
+1 added, 0 removed; done.
+Running hooks in /etc/ca-certificates/update.d...
+
+Adding debian:registry.pem
+done.
+done.
+
+#run htpass to create authentication
+sudo docker run --entrypoint htpasswd httpd:2 -Bbn admin ******** > ./htpasswd
+
+#check what is in the file
+cat ./htpasswd
+
+#restart our registry container, join the registry bridge network we created earlier
+sudo docker run --rm --name registry-backend --network registry -d registry:2
+
+#check which containers are running
+sudo docker ps
+
+#remove the old container if it is still running
+sudo docker rm -f registry
+
+#create our reverse proxy
+sudo docker run --rm -v $PWD/nginx.conf:/etc/nginx/nginx.conf -v $PWD/htpasswd:/auth/htpasswd -v $PWD/certs:/certs --network registry -p 5000:5000 -d nginx
 
 
 
