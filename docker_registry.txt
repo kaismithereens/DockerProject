@@ -164,5 +164,30 @@ sudo docker rm -f registry
 #create our reverse proxy
 sudo docker run --rm -v $PWD/nginx.conf:/etc/nginx/nginx.conf -v $PWD/htpasswd:/auth/htpasswd -v $PWD/certs:/certs --network registry -p 5000:5000 -d nginx
 
+sudo docker ps
+
+sudo docker login localhost:5000
+
+sudo docker push localhost:5000/my-image 
+
+sudo docker rmi localhost:5000/my-image -f
+
+sudo docker run --rm localhost:5000/my-image
+
+9.5. 
+
+Alternative registries benefits:
+-> increased security and privacy
+-> work around Docker Hub's pull rate limit (100 times per 6 hours)
+-> environment compability
+
+Three categories:
+1. Source-code-hosting registries (GitHub, GitLab)
+2. Cloud provider registries (AWS Elastic Container Registry, Azure Container Registry, Google Cloud Container Registry)
+3. Enterprise registries (VMWare Harbor, Red Hat Quay, Sonatype Nexus, JFrog Artifactory)
+
+
+
+
 
 
